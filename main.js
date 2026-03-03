@@ -93,8 +93,46 @@ function getShiftDuration(startTime, endTime) {
 // endTime: (typeof string) formatted as hh:mm:ss am or hh:mm:ss pm
 // Returns: string formatted as h:mm:ss
 // ============================================================
+function timeStringToMinutes(timeStr) {
+    let parts = timeStr.split(':');
+    let hours = parseInt(parts[0]);
+    let minutes = parseInt(parts[1]);
+    let seconds = parseInt(parts[2]);
+    return (hours * 60) + minutes + (seconds / 60);
+}
+function calculateActiveTime(STime,ETime){
+    //static shift from 8am to 10pm 14 hours yaane 840 minutes
+    //8am 08:00:00 am=480  10pm 10:00:00 pm=600
+    let startMinutes=convertTimeToMinutes(STime);
+    let endMinutes=convertTimeToMinutes(ETime);
+    let activeStart, activeEnd;
+    if(startMinutes>=1320 && endMinutes<=480 && startMinutes>endMinutes)
+        return "00:00:00";
+    else if(startMinutes<=480)
+        activeStart=480;//8AM
+    else if(startMinutes>=480 && startMinutes<=1320)
+        activeStart=startMinutes;//ebtaded baad ma l shift ebtada w abl ma ykhlas
+
+    if(endMinutes<=1320)
+        activeEnd=endMinutes;
+    else if(endMinutes>=1320)
+        activeEnd=1320//10PM
+
+    let activeTime=activeEnd-activeStart;//rakam in minutes
+    return convertBack(activeTime)
+
+}
 function getIdleTime(startTime, endTime) {
     // TODO: Implement this function
+    //returning hh:mm:ss am/pm (need to convert later for the calculations)
+    let totalShiftTime=getShiftDuration(startTime, endTime);
+    //helper calculateActiveTime b7ot feha el conditions btaaty baa (3 cond.)
+    let activeTime=calculateActiveTime(startTime, endTime);
+    //simple calculation left
+    let totalMinutes=timeStringToMinutes(totalShiftTime);//got no am/pm
+    let activeMinutes=timeStringToMinutes(activeTime);
+    let idleMinutes=totalMinutes-activeMinutes;
+    return convertBack(idleMinutes);
 }
 
 // ============================================================
