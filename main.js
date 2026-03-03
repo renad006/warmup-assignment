@@ -72,6 +72,14 @@ function convertBack(timeInMinutes){
     timeInMinutes=timeInMinutes % 60; 
     let minute=Math.trunc(timeInMinutes);
     let second=Math.round((timeInMinutes - minute) * 60);
+    if (second === 60) {
+        second = 0;
+        minute += 1;
+    }
+    if (minute === 60) {
+        minute = 0;
+        hour += 1;
+    }
     let formattedMinutes = minute < 10 ? '0' + minute : minute;
     let formattedSeconds = second < 10 ? '0' + second : second;
     return `${hour}:${formattedMinutes}:${formattedSeconds}`
@@ -143,6 +151,13 @@ function getIdleTime(startTime, endTime) {
 // ============================================================
 function getActiveTime(shiftDuration, idleTime) {
     // TODO: Implement this function
+    let shiftMinutes=timeStringToMinutes(shiftDuration);
+    let idleMinutes=timeStringToMinutes(idleTime);
+    let activeMinutes=shiftMinutes-idleMinutes;
+    if(activeMinutes<0)
+        activeMinutes=0;
+    return convertBack(activeMinutes);
+
 }
 
 // ============================================================
