@@ -168,6 +168,14 @@ function getActiveTime(shiftDuration, idleTime) {
 // ============================================================
 function metQuota(date, activeTime) {
     // TODO: Implement this function
+    let quota;
+    if (date>="2025-04-10" && date<="2025-04-30")
+        quota = 360;
+    else
+        quota = 504;
+    let activeMinutes=timeStringToMinutes(activeTime);
+
+    return activeMinutes>=quota;
 }
 
 // ============================================================
