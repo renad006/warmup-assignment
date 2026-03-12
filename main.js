@@ -186,6 +186,81 @@ function metQuota(date, activeTime) {
 // ============================================================
 function addShiftRecord(textFile, shiftObj) {
     // TODO: Implement this function
+    let content=fs.readFileSync(textFile,'utf8');     //reading the file content
+    let lines= content.split('\n');     //splitting the file into lines
+    let header=lines[0];  //saving the header f variable
+    let datalines=lines.slice(1);  //removing l header(not needed)
+    datalines=datalines.filter(line=>line.trim()!=""); //filtering empty lines
+    //parsing data
+
+    let records=[];//store all recs
+    // Loop through each data line
+    for (let i = 0; i <lines.length; i++) {
+        let values =lines[i].split(',');
+        //records[record,record] array of arrays kol driver wakhed index->record
+        let record = {
+            driverID: values[0],
+            driverName: values[1],
+            date: values[2],
+            startTime: values[3],
+            endTime: values[4],
+            shiftDuration: values[5],
+            idleTime: values[6],
+            activeTime: values[7],
+            metQuota: values[8] === 'true', // Convert string to boolean
+            hasBonus: values[9] === 'true'
+        }
+        records.push(record);
+    }
+    // Check if same driverID and date already exists
+    for (let i = 0; i < records.length; i++) {
+        if (records[i].driverID === shiftObj.driverID && 
+            records[i].date === shiftObj.date) {
+            return {}; // Found duplicate->>Return empty object
+        }
+    }
+        // Calculate using your existing functions
+    let shiftDuration = getShiftDuration(shiftObj.startTime, shiftObj.endTime);
+    let idleTime = getIdleTime(shiftObj.startTime, shiftObj.endTime);
+    let activeTime = getActiveTime(shiftDuration, idleTime);
+    let quotaMet = metQuota(shiftObj.date, activeTime);
+
+    //no duplicates baa fa new driver ha create a brand new one
+        let newRecord = {
+        driverID: shiftObj.driverID,
+        driverName: shiftObj.driverName,
+        date: shiftObj.date,
+        startTime: shiftObj.startTime,
+        endTime: shiftObj.endTime,
+        shiftDuration: shiftDuration,
+        idleTime: idleTime,
+        activeTime: activeTime,
+        metQuota: quotaMet,
+        hasBonus: false
+    }
+    let insertIndex = records.length; // default: end of array
+    // find the last occurrence of this driverID
+    for (let i = records.length - 1; i >= 0; i--) {
+        if (records[i].driverID === shiftObj.driverID) {
+            insertIndex = i + 1; // insert after this record
+            break;
+        }
+    }
+        // Insert at the found index
+    records.splice(insertIndex, 0, newRecord);
+        // Start with header
+    let newContent = header + '\n';
+    // Add each record
+    for (let i = 0; i < records.length; i++) {
+        let r = records[i];
+        newContent += `${r.driverID},${r.driverName},${r.date},${r.startTime},${r.endTime},${r.shiftDuration},${r.idleTime},${r.activeTime},${r.metQuota},${r.hasBonus}`;
+        // Add new line if not last record
+        if (i < records.length - 1) {
+            newContent += '\n';
+        }
+    }
+    fs.writeFileSync(textFile, newContent);
+    return newRecord;
 }
 
 // ============================================================
@@ -198,6 +273,32 @@ function addShiftRecord(textFile, shiftObj) {
 // ============================================================
 function setBonus(textFile, driverID, date, newValue) {
     // TODO: Implement this function
+    let content=fs.readFileSync(textFile,'utf8');     //reading the file content
+    let lines= content.split('\n');     //splitting the file into lines
+    let header=lines[0];  //saving the header f variable
+    let datalines=lines.slice(1);  //removing l header(not needed)
+    datalines=datalines.filter(line=>line.trim()!=""); //filtering empty lines
+
+    for (let i = 0; i < datalines.length; i++) {
+    // Split the current line into columns
+    let columns = datalines[i].split(',');
+    // Check if this is the row we want
+    if (columns[0] === driverID && columns[2] === date) {
+        columns[9] = newValue ? 'true' : 'false'; // Convert boolean to string
+        datalines[i] = columns.join(',');
+        break; // Stop searching once found
+    }
+}
+    // Start with header ;rebuild the file content
+    let newContent = header + '\n';
+    // Add all data lines
+    for (let i = 0; i < datalines.length; i++) {
+        newContent += datalines[i];
+        if (i < datalines.length - 1) {
+            newContent += '\n';
+        }
+    }
+    fs.writeFileSync(textFile, newContent);
 }
 
 // ============================================================
@@ -209,6 +310,13 @@ function setBonus(textFile, driverID, date, newValue) {
 // ============================================================
 function countBonusPerMonth(textFile, driverID, month) {
     // TODO: Implement this function
+    let content=fs.readFileSync(textFile,'utf8');     //reading the file content
+    let lines= content.split('\n');     //splitting the file into lines
+    let header=lines[0];  //saving the header f variable
+    let datalines=lines.slice(1);  //removing l header(not needed)
+    datalines=datalines.filter(line=>line.trim()!=""); //filtering empty lines
+
+    
 }
 
 // ============================================================
