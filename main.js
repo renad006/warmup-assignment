@@ -109,26 +109,21 @@ function timeStringToMinutes(timeStr) {
     return (hours * 60) + minutes + (seconds / 60);
 }
 function calculateActiveTime(STime,ETime){
-    //static shift from 8am to 10pm 14 hours yaane 840 minutes
-    //8am 08:00:00 am=480  10pm 10:00:00 pm=600
-    let startMinutes=convertTimeToMinutes(STime);
-    let endMinutes=convertTimeToMinutes(ETime);
-    let activeStart, activeEnd;
-    if(startMinutes>=1320 && endMinutes<=480 && startMinutes>endMinutes)
-        return "00:00:00";
-    else if(startMinutes<=480)
-        activeStart=480;//8AM
-    else if(startMinutes>=480 && startMinutes<=1320)
-        activeStart=startMinutes;//ebtaded baad ma l shift ebtada w abl ma ykhlas
-
-    if(endMinutes<=1320)
-        activeEnd=endMinutes;
-    else if(endMinutes>=1320)
-        activeEnd=1320//10PM
-
-    let activeTime=activeEnd-activeStart;//rakam in minutes
-    return convertBack(activeTime)
-
+    // TODO: Implement this function
+    let startMinutes = convertTimeToMinutes(STime);
+    let endMinutes = convertTimeToMinutes(ETime);
+    if (endMinutes < startMinutes) {
+        endMinutes += 24 * 60;
+    }
+    let SHIFT_START = 480;  // 8:00 AM in minutes
+    let SHIFT_END = 1320;   // 10:00 PM in minutes
+    let activeStart = Math.max(startMinutes, SHIFT_START);
+    let activeEnd = Math.min(endMinutes, SHIFT_END);
+    if (activeEnd <= activeStart) {
+        return "0:00:00";
+    }
+    let activeTime = activeEnd - activeStart;
+    return convertBack(activeTime);
 }
 function getIdleTime(startTime, endTime) {
     // TODO: Implement this function
@@ -195,7 +190,7 @@ function addShiftRecord(textFile, shiftObj) {
 
     let records=[];//store all recs
     // Loop through each data line
-    for (let i = 0; i <lines.length; i++) {
+    for (let i = 0; i <datalines.length; i++) {
         let values =lines[i].split(',');
         //records[record,record] array of arrays kol driver wakhed index->record
         let record = {
@@ -283,7 +278,7 @@ function setBonus(textFile, driverID, date, newValue) {
         // Split the current line into columns
         let columns = datalines[i].split(',');
         // Check if this is the row we want
-        if (columns[0] === driverID && columns[2] === date) {
+        if (columns[0].trim() === driverID.trim() && columns[2].trim() === date.trim()) {
             columns[9] = newValue ? 'true' : 'false'; // Convert boolean to string
             datalines[i] = columns.join(',');
             break; // Stop searching once found
@@ -386,41 +381,24 @@ function getTotalActiveHoursPerMonth(textFile, driverID, month) {
 // ============================================================
 function getRequiredHoursPerMonth(textFile, rateFile, bonusCount, driverID, month) {
     // TODO: Implement this function
-        let rateContent = fs.readFileSync(rateFile, 'utf8');
+    let rateContent = fs.readFileSync(rateFile, 'utf8');
     rateContent = rateContent.replace(/^\uFEFF/, '');
-    let rateLines = rateContent.split('\n');
-    // Filter out empty lines but KEEP the first data line
-    let rateData = rateLines.filter(line => line.trim() !== "");
+    let rateData = rateContent.split('\n').filter(line => line.trim() !== "");
     let driverDayOff = null;
     for (let i = 0; i < rateData.length; i++) {
         let columns = rateData[i].split(',').map(item => item.trim());
-        if (columns[0].trim() === driverID.trim()) {
+        if (columns[0] === driverID) {
             driverDayOff = columns[1].trim();
             break;
         }
     }
-    if (!driverDayOff) {
-        return "0:00:00";
-    }
-    // Convert day off to number (case insensitive)
-    let dayOffNumber;
-    let dayOffLower = driverDayOff.toLowerCase();
-    switch(dayOffLower) {
-        case "sunday": dayOffNumber = 0; break;
-        case "monday": dayOffNumber = 1; break;
-        case "tuesday": dayOffNumber = 2; break;
-        case "wednesday": dayOffNumber = 3; break;
-        case "thursday": dayOffNumber = 4; break;
-        case "friday": dayOffNumber = 5; break;
-        case "saturday": dayOffNumber = 6; break;
-        default: dayOffNumber = -1;
-    }
+    if (!driverDayOff) return "0:00:00";
     // Read shifts file
     let shiftContent = fs.readFileSync(textFile, 'utf8');
-    let shiftLines = shiftContent.split('\n');
-    let shiftData = shiftLines.slice(1).filter(line => line.trim() !== "");
+    let shiftData = shiftContent.split('\n').slice(1).filter(line => line.trim() !== "");
     let monthStr = month < 10 ? '0' + month : '' + month;
     let totalMinutes = 0;
+
     for (let i = 0; i < shiftData.length; i++) {
         let columns = shiftData[i].split(',').map(item => item.trim());
         if (columns[0] === driverID) {
@@ -430,15 +408,11 @@ function getRequiredHoursPerMonth(textFile, rateFile, bonusCount, driverID, mont
             if (rowMonth === monthStr) {
                 let isEid = (month === 4 && rowDay >= 10 && rowDay <= 30);
                 let dailyQuota = isEid ? 360 : 504;
-                let date = new Date(columns[2] + 'T12:00:00');
-                let dayOfWeek = date.getDay();
-                if (dayOfWeek !== dayOffNumber) {
-                    totalMinutes += dailyQuota;
-                }
+                totalMinutes += dailyQuota;
             }
         }
     }
-    // Subtract bonus hours
+
     totalMinutes -= bonusCount * 120;
     if (totalMinutes < 0) totalMinutes = 0;
     return convertBack(totalMinutes);
