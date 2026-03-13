@@ -386,6 +386,62 @@ function getTotalActiveHoursPerMonth(textFile, driverID, month) {
 // ============================================================
 function getRequiredHoursPerMonth(textFile, rateFile, bonusCount, driverID, month) {
     // TODO: Implement this function
+        let rateContent = fs.readFileSync(rateFile, 'utf8');
+    rateContent = rateContent.replace(/^\uFEFF/, '');
+    let rateLines = rateContent.split('\n');
+    // Filter out empty lines but KEEP the first data line
+    let rateData = rateLines.filter(line => line.trim() !== "");
+    let driverDayOff = null;
+    for (let i = 0; i < rateData.length; i++) {
+        let columns = rateData[i].split(',').map(item => item.trim());
+        if (columns[0].trim() === driverID.trim()) {
+            driverDayOff = columns[1].trim();
+            break;
+        }
+    }
+    if (!driverDayOff) {
+        return "0:00:00";
+    }
+    // Convert day off to number (case insensitive)
+    let dayOffNumber;
+    let dayOffLower = driverDayOff.toLowerCase();
+    switch(dayOffLower) {
+        case "sunday": dayOffNumber = 0; break;
+        case "monday": dayOffNumber = 1; break;
+        case "tuesday": dayOffNumber = 2; break;
+        case "wednesday": dayOffNumber = 3; break;
+        case "thursday": dayOffNumber = 4; break;
+        case "friday": dayOffNumber = 5; break;
+        case "saturday": dayOffNumber = 6; break;
+        default: dayOffNumber = -1;
+    }
+    // Read shifts file
+    let shiftContent = fs.readFileSync(textFile, 'utf8');
+    let shiftLines = shiftContent.split('\n');
+    let shiftData = shiftLines.slice(1).filter(line => line.trim() !== "");
+    let monthStr = month < 10 ? '0' + month : '' + month;
+    let totalMinutes = 0;
+    for (let i = 0; i < shiftData.length; i++) {
+        let columns = shiftData[i].split(',').map(item => item.trim());
+        if (columns[0] === driverID) {
+            let dateParts = columns[2].split('-');
+            let rowMonth = dateParts[1];
+            let rowDay = parseInt(dateParts[2], 10);
+            if (rowMonth === monthStr) {
+                let isEid = (month === 4 && rowDay >= 10 && rowDay <= 30);
+                let dailyQuota = isEid ? 360 : 504;
+                let date = new Date(columns[2] + 'T12:00:00');
+                let dayOfWeek = date.getDay();
+                if (dayOfWeek !== dayOffNumber) {
+                    totalMinutes += dailyQuota;
+                }
+            }
+        }
+    }
+    // Subtract bonus hours
+    totalMinutes -= bonusCount * 120;
+    if (totalMinutes < 0) totalMinutes = 0;
+    return convertBack(totalMinutes);
 }
 
 // ============================================================
