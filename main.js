@@ -454,6 +454,48 @@ function getRequiredHoursPerMonth(textFile, rateFile, bonusCount, driverID, mont
 // ============================================================
 function getNetPay(driverID, actualHours, requiredHours, rateFile) {
     // TODO: Implement this function
+    let rateContent = fs.readFileSync(rateFile, 'utf8');
+    rateContent = rateContent.replace(/^\uFEFF/, '');
+    let rateLines = rateContent.split('\n');
+    let rateData = rateLines.filter(line => line.trim() !== "");
+    // Find this driver
+    let driverBasePay = null;
+    let driverTier = null;
+    for (let i = 0; i < rateData.length; i++) {
+        let columns = rateData[i].split(',').map(item => item.trim());
+        if (columns[0] === driverID) {
+            driverBasePay = parseInt(columns[2], 10); 
+            driverTier = parseInt(columns[3], 10);
+            break;
+        }
+    }
+    if (!driverBasePay || !driverTier) {
+        return 0; 
+    }
+    let actualMinutes = timeStringToMinutes(actualHours);
+    let requiredMinutes = timeStringToMinutes(requiredHours);
+    if (actualMinutes >= requiredMinutes) {
+        return driverBasePay;
+    }
+    let missingMinutes = requiredMinutes - actualMinutes;
+    let allowanceMinutes;
+    switch(driverTier) {
+        case 1: allowanceMinutes = 50 * 60; break; 
+        case 2: allowanceMinutes = 20 * 60; break; 
+        case 3: allowanceMinutes = 10 * 60; break;
+        case 4: allowanceMinutes = 3 * 60; break;
+        default: allowanceMinutes = 0;
+    }
+    let billableMinutes = missingMinutes - allowanceMinutes;
+    if (billableMinutes <= 0) {
+        return driverBasePay;
+    }
+    let billableHours = Math.floor(billableMinutes / 60);
+    let deductionRate = Math.floor(driverBasePay / 185);
+    let salaryDeduction = billableHours * deductionRate;
+    let netPay = driverBasePay - salaryDeduction;
+    return netPay;
+
 }
 
 module.exports = {
