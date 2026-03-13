@@ -280,15 +280,15 @@ function setBonus(textFile, driverID, date, newValue) {
     datalines=datalines.filter(line=>line.trim()!=""); //filtering empty lines
 
     for (let i = 0; i < datalines.length; i++) {
-    // Split the current line into columns
-    let columns = datalines[i].split(',');
-    // Check if this is the row we want
-    if (columns[0] === driverID && columns[2] === date) {
-        columns[9] = newValue ? 'true' : 'false'; // Convert boolean to string
-        datalines[i] = columns.join(',');
-        break; // Stop searching once found
+        // Split the current line into columns
+        let columns = datalines[i].split(',');
+        // Check if this is the row we want
+        if (columns[0] === driverID && columns[2] === date) {
+            columns[9] = newValue ? 'true' : 'false'; // Convert boolean to string
+            datalines[i] = columns.join(',');
+            break; // Stop searching once found
+        }
     }
-}
     // Start with header ;rebuild the file content
     let newContent = header + '\n';
     // Add all data lines
@@ -315,8 +315,28 @@ function countBonusPerMonth(textFile, driverID, month) {
     let header=lines[0];  //saving the header f variable
     let datalines=lines.slice(1);  //removing l header(not needed)
     datalines=datalines.filter(line=>line.trim()!=""); //filtering empty lines
+    let monthNum = parseInt(month, 10);  // "4" or "04" → 4
+    let monthStr = monthNum < 10 ? '0' + monthNum : '' + monthNum;  // 4 → "04"
+    let driverFound = false;
+    let bonusCount = 0;
 
-    
+    for (let i = 0; i < datalines.length; i++) {
+        let columns = datalines[i].split(',').map(item => item.trim());
+        if (columns[0] === driverID) {
+            driverFound = true;
+            let dateParts = columns[2].split('-');
+            let rowMonth = dateParts[1];
+            // Check if month matches AND bonus is true
+            if (rowMonth === monthStr && columns[9] === 'true') {
+                bonusCount++;
+            }
+        }
+    }
+    if (!driverFound) {
+        return -1;
+    } else {
+        return bonusCount;
+    }
 }
 
 // ============================================================
