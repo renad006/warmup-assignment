@@ -315,6 +315,7 @@ function countBonusPerMonth(textFile, driverID, month) {
     let header=lines[0];  //saving the header f variable
     let datalines=lines.slice(1);  //removing l header(not needed)
     datalines=datalines.filter(line=>line.trim()!=""); //filtering empty lines
+
     let monthNum = parseInt(month, 10);  // "4" or "04" → 4
     let monthStr = monthNum < 10 ? '0' + monthNum : '' + monthNum;  // 4 → "04"
     let driverFound = false;
@@ -348,6 +349,30 @@ function countBonusPerMonth(textFile, driverID, month) {
 // ============================================================
 function getTotalActiveHoursPerMonth(textFile, driverID, month) {
     // TODO: Implement this function
+    let content=fs.readFileSync(textFile,'utf8');     //reading the file content
+    let lines= content.split('\n');     //splitting the file into lines
+    let header=lines[0];  //saving the header f variable
+    let datalines=lines.slice(1);  //removing l header(not needed)
+    datalines=datalines.filter(line=>line.trim()!=""); //filtering empty lines
+
+    let monthStr = month < 10 ? '0' + month : '' + month; //converting month to string to compare
+    let totalMinutes = 0;  // We'll add all active times here
+
+    for (let i = 0; i < datalines.length; i++) {
+        let columns = datalines[i].split(',').map(item => item.trim());
+        // Check if this is our driver
+        if (columns[0] === driverID) {
+            // Extract month from date
+            let dateParts = columns[2].split('-');
+            let rowMonth = dateParts[1]; 
+            if (rowMonth === monthStr) {
+                // Convert activeTime to minutes and add to total
+                let activeMinutes = timeStringToMinutes(columns[7]);
+                totalMinutes += activeMinutes;
+            }
+        }
+    }
+    return convertBack(totalMinutes);
 }
 
 // ============================================================
